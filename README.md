@@ -77,14 +77,11 @@ It is a **full analytical workflow** designed to mirror how a **municipal police
 ## Tableau Dashboard
 
 ### Dashboard Screenshots
+- Tableau Public Link: https://public.tableau.com/app/profile/jun.park5694/viz/Denver_Crime_visualization/Dashboard1?publish=yes
+- Dashboard Action: Filtering district on Hotspot Map and Neighborhood Hotspots by hovering on District Ranking
 
+![Dashboard Overview](./Visualization/db_overview.png)
 
-```
-/visuals
-  ├── tableau_dashboard_overview.png
-  ├── monthly_trend_view.png
-  └── hotspot_map_view.png
-```
 
 ## Recommendations
 
