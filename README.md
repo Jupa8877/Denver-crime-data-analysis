@@ -13,9 +13,6 @@ This project was built to demonstrate **how a Crime & Data Analyst can use SQL a
 > **clear patterns, emerging hotspot insights, and concise monthly summaries**  
 > that help command staff and district leadership make informed, data-driven decisions.
 
-This is not a visualization-only project.  
-It is a **full analytical workflow** designed to mirror how a **municipal police department** conducts **strategic crime analysis**.
-
 ## What I Am Demonstrating
 
 - Strategic crime pattern analysis (temporal & spatial)  

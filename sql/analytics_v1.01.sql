@@ -1,50 +1,59 @@
+-- The latest date on fact_crime_offenses
+select max(incident_date)
+from fact_crime_offenses;
+-- 2026-01-16
 
--- Monthly incident trend (occurrence-based)
-SELECT DATE_FORMAT(incident_date, '%Y-%m') AS ym
-	 , COUNT(*) AS incidents
-FROM fact_crime_offenses
-WHERE incident_date IS NOT NULL
-GROUP BY ym
-ORDER BY ym;
+select *
+from fact_crime_offenses
+limit 5;
+-- Monthly incidents count
+select date_format(incident_date, '%y-%m') as ym
+	 , count(distinct incident_id) as Total_incidents
+from fact_crime_offenses
+where incident_date is not null
+group by ym
+order by ym desc
+limit 5;
 
 -- Month over month (MoM) incidents change and percent change
-WITH m AS (
-	SELECT DATE_FORMAT(incident_date, '%Y-%m') AS ym
-		 , COUNT(*) AS incidents
-	FROM fact_crime_offenses
-	WHERE incident_date IS NOT NULL
-	GROUP BY ym
+with m as (
+				select date_format(incident_date, '%y-%m') as ym
+					 , count(distinct incident_id) as Total_incidents
+				from fact_crime_offenses
+				where incident_date is not null
+				group by ym
+				order by ym desc 
 )
-SELECT ym
-	 , incidents
-     , LAG(incidents) OVER (ORDER BY ym) AS prev_incidents
-     , ROUND(100 * (incidents - LAG(incidents) OVER (ORDER BY ym)) / NULLIF(LAG(incidents) OVER (ORDER BY ym), 0), 2) AS mom_change_pct
-FROM m
-ORDER BY ym;
 
---  Recent 30 days vs previous 30 days total incidents changes (near real-time comparison)
-SELECT SUM(incident_date >= CURDATE() - INTERVAL 30 DAY) AS last_30
-	 , SUM(incident_date BETWEEN CURDATE() - INTERVAL 60 DAY AND CURDATE() - INTERVAL 31 DAY) AS prev_30
-     , (SUM(incident_date >= CURDATE() - INTERVAL 30 DAY) -
-		SUM(incident_date BETWEEN CURDATE() - INTERVAL 60 DAY AND CURDATE() - INTERVAL 31 DAY)) AS delta
-FROM fact_crime_offenses
-WHERE incident_date IS NOT NULL;
+select ym
+	 , Total_incidents
+     , lag(Total_incidents) over (order by ym) as Previous_Month_Incidents
+     , round(((Total_incidents - lag(Total_incidents) over (order by ym)) / nullif(lag(Total_incidents) over (order by ym), 0)) * 100, 2) as MoM_pct_change
+from m
+order by ym desc
+limit 5;
 
--- Day of week crime pattern
-SELECT DAYNAME(incident_date) AS day_name
-	 , COUNT(*) AS incidents
-FROM fact_crime_offenses
-WHERE incident_date IS NOT NULL
-GROUP BY day_name
-ORDER BY incidents DESC;
+--  Recent 30 days vs previous 30 days total incidents changes (from the latest date of incident_date)
+select sum(incident_date >= (select max(incident_date) from fact_crime_offenses) - interval 30 day) as last_30_days
+	 , sum(incident_date between (select max(incident_date) from fact_crime_offenses) - interval 60 day 
+		   and (select max(incident_date) from fact_crime_offenses) - interval 31 day) as previous_30_days
+from fact_crime_offenses
+where incident_date is not null;
 
--- Hour-of-day crime pattern (supports nighttime peak analysis)
-SELECT HOUR(first_occurrence_dt) AS hour_of_day
-	 , COUNT(*) AS incidents
-FROM fact_crime_offenses
-WHERE first_occurrence_dt IS NOT NULL
-GROUP BY hour_of_day
-ORDER BY hour_of_day;
+-- Day of week Crime Patterns
+select dayname(incident_date) as day_name
+	 , count(incident_id) as total_incidents
+from fact_crime_offenses
+group by day_name
+order by total_incidents desc;
+
+-- Hour of day Crime Patterns
+select hour(first_occurrence_dt) as hour_of_day
+	 , count(incident_address) as total_incidents
+from fact_crime_offenses
+where first_occurrence_dt is not null
+group by hour_of_day
+order by total_incidents desc;
 
 -- District incidents totals (high-level resource planning)
 SELECT district_id
