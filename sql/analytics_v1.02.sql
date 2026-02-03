@@ -8,7 +8,7 @@ from fact_crime_offenses
 limit 5;
 -- Monthly incidents count
 select date_format(incident_date, '%y-%m') as ym
-	 , count(distinct incident_id) as Total_incidents
+	 , count(*) as Total_incidents
 from fact_crime_offenses
 where incident_date is not null
 group by ym
@@ -18,7 +18,7 @@ limit 5;
 -- Month over month (MoM) incidents change and percent change
 with m as (
 				select date_format(incident_date, '%y-%m') as ym
-					 , count(distinct incident_id) as Total_incidents
+					 , count(*) as Total_incidents
 				from fact_crime_offenses
 				where incident_date is not null
 				group by ym
@@ -55,44 +55,45 @@ where first_occurrence_dt is not null
 group by hour_of_day
 order by total_incidents desc;
 
--- District incidents totals (high-level resource planning)
-SELECT district_id
-	 , COUNT(*) AS incidents
-FROM fact_crime_offenses
-GROUP BY district_id
-ORDER BY incidents DESC;
+-- Total incidents per district (high-level resource planning)
+select district_id
+	 , count(*) as total_incidents
+from fact_crime_offenses
+group by district_id
+order by total_incidents desc;
 
--- District incidents totals for the last 30 days (rapid situational awareness)
-SELECT district_id
-	 , COUNT(*) AS incidents_last_30
-FROM fact_crime_offenses
-WHERE incident_date >= CURDATE() - INTERVAL 30 DAY
-GROUP BY district_id
-ORDER BY incidents_last_30 DESC;
+-- Total incidents per district for the last 30 days (rapid situational awareness)
+select district_id
+	 , count(*) as total_incidents_last_30days
+from fact_crime_offenses
+-- last 30 days from 1/16/2026(the latest date when the data was updated)
+where incident_date >= (select max(incident_date) from fact_crime_offenses) - interval 30 day
+group by district_id
+order by total_incidents_last_30days desc;
 
 -- Top 20 crime neighborhoods (hotspot candidates)
-SELECT neighborhood_id
-	 , COUNT(*) AS incidents
-FROM fact_crime_offenses
-GROUP BY neighborhood_id
-ORDER BY incidents DESC
-LIMIT 20;
+select neighborhood_id
+	 , count(*) as total_incidents
+from fact_crime_offenses
+group by neighborhood_id
+order by total_incidents desc
+limit 20;
 
 -- Top 10 offense categories
-SELECT offense_category_id
-	 , COUNT(*) AS incidents
-FROM fact_crime_offenses
-GROUP BY offense_category_id
-ORDER BY incidents DESC
-LIMIT 10;
+select offense_category_id
+	 , count(*) as total_incidents
+from fact_crime_offenses
+group by offense_category_id
+order by total_incidents desc
+limit 10;
 
--- Top 10 offense types
-SELECT offense_type_id
-	 , COUNT(*) AS incidents
-FROM fact_crime_offenses
-GROUP BY offense_type_id
-ORDER BY incidents DESC
-LIMIT 10;
+-- Top 10 offense type
+select offense_type_id
+	 , count(*) as total_incidents
+from fact_crime_offenses
+group by offense_type_id
+order by 2 desc
+limit 10;
 
 -- Offense category share % by month
 WITH m AS (
@@ -160,8 +161,8 @@ LIMIT 50;
 WITH grid_60 AS (
 	SELECT ROUND(geo_lat, 2) AS lat_grid
 		 , ROUND(geo_lon, 2) AS lon_grid
-         , SUM(incident_date >= CURDATE() - INTERVAL 30 DAY) AS last_30
-         , SUM(incident_date BETWEEN CURDATE() - INTERVAL 60 DAY AND CURDATE() - INTERVAL 31 DAY) AS prev_30
+         , SUM(incident_date >= (select max(incident_date) from fact_crime_offenses) - INTERVAL 30 DAY) AS last_30
+         , SUM(incident_date BETWEEN (select max(incident_date) from fact_crime_offenses) - INTERVAL 60 DAY AND (select max(incident_date) from fact_crime_offenses) - INTERVAL 31 DAY) AS prev_30
   FROM fact_crime_offenses
   WHERE incident_date IS NOT NULL
     AND geo_lat IS NOT NULL AND geo_lon IS NOT NULL
